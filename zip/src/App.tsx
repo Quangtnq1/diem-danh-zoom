@@ -1,9 +1,11 @@
 import { BrowserRouter, Routes, Route, useNavigate, useParams, Link } from 'react-router-dom';
 import React, { useEffect, useState } from 'react';
-import { Users, BookOpen, Clock, CheckCircle2, XCircle, RefreshCw, Save, Download, Trash2, Plus, ArrowLeft } from 'lucide-react';
+import { Users, BookOpen, Clock, CheckCircle2, XCircle, RefreshCw, Save, Download, Upload, Trash2, Plus, ArrowLeft, ChevronDown } from 'lucide-react';
 import { db } from './lib/firebase';
 import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, getDocs, deleteDoc } from 'firebase/firestore';
 import * as XLSX from 'xlsx';
+import amuraLogo from './assets/amura-logo.jpg';
+import amuraMascot from './assets/amura-mascot.jpg';
 
 // Types
 type ZoomEvent = {
@@ -33,14 +35,12 @@ type StudentGroup = {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900 flex flex-col">
+      <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-brand-100 selection:text-brand-900 flex flex-col">
         <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm flex items-center px-8">
           <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Users className="w-6 h-6 text-white" />
-              </div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-800">Zoom Attendance</h1>
+              <img src={amuraLogo} alt="AMURA" className="h-7 w-auto object-contain" />
+              <span className="hidden sm:inline text-sm font-medium text-slate-400 border-l border-slate-200 pl-3">Điểm danh Zoom</span>
             </div>
           </div>
         </header>
@@ -57,36 +57,69 @@ export default function App() {
   );
 }
 
+// Danh sách tài khoản Zoom đã kết nối. Hiện chỉ có 1 tài khoản, nhưng để dạng mảng
+// sẵn để sau này thêm tài khoản mới không cần sửa lại UI chọn tài khoản.
+const ZOOM_ACCOUNTS = [
+  { id: 'zoom3', email: 'zoom3.amura@gmail.com', label: 'Z3' },
+];
+
 function SelectAccount() {
   const navigate = useNavigate();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+
+  const selectedAccount = ZOOM_ACCOUNTS.find(a => a.id === selectedAccountId) || null;
+
   return (
     <div className="max-w-md mx-auto mt-12 bg-white rounded-xl shadow-sm border border-slate-200 p-8">
       <div className="text-center mb-8">
-        <div className="bg-indigo-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-          <Users className="w-8 h-8 text-indigo-600" />
-        </div>
+        <img src={amuraMascot} alt="AMURA" className="w-20 h-20 object-contain mx-auto mb-4" />
         <h2 className="text-2xl font-semibold text-slate-800">Chọn tài khoản Zoom</h2>
         <p className="text-slate-500 mt-2">Chọn tài khoản đã kết nối để tiếp tục</p>
       </div>
-      
-      <div className="space-y-4">
-        <div className="flex items-center justify-between p-4 rounded-lg border-2 border-indigo-500 bg-indigo-50/50 cursor-pointer hover:bg-indigo-50 transition-colors">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-semibold">
-              Z3
+
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setPickerOpen(o => !o)}
+          className="w-full flex items-center justify-between p-4 rounded-lg border-2 border-slate-200 hover:border-brand-300 bg-white transition-colors"
+        >
+          {selectedAccount ? (
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold">
+                {selectedAccount.label}
+              </div>
+              <p className="font-medium text-slate-900">{selectedAccount.email}</p>
             </div>
-            <div>
-              <p className="font-medium text-slate-900">zoom3.amura@gmail.com</p>
-              <p className="text-sm text-slate-500">Mặc định</p>
-            </div>
+          ) : (
+            <span className="text-slate-500 font-medium">Chọn 1 tài khoản</span>
+          )}
+          <ChevronDown className={`w-5 h-5 text-slate-400 transition-transform ${pickerOpen ? 'rotate-180' : ''}`} />
+        </button>
+
+        {pickerOpen && (
+          <div className="absolute z-10 mt-2 w-full bg-white border border-slate-200 rounded-lg shadow-lg overflow-hidden">
+            {ZOOM_ACCOUNTS.map(acc => (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => { setSelectedAccountId(acc.id); setPickerOpen(false); }}
+                className="w-full flex items-center gap-3 p-4 hover:bg-brand-50 transition-colors text-left"
+              >
+                <div className="w-10 h-10 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-semibold">
+                  {acc.label}
+                </div>
+                <p className="font-medium text-slate-900">{acc.email}</p>
+              </button>
+            ))}
           </div>
-          <CheckCircle2 className="w-5 h-5 text-indigo-600" />
-        </div>
+        )}
       </div>
-      
-      <button 
+
+      <button
         onClick={() => navigate('/dashboard')}
-        className="w-full mt-8 bg-indigo-600 text-white px-5 py-3 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors flex justify-center items-center gap-2 shadow-sm"
+        disabled={!selectedAccount}
+        className="w-full mt-8 bg-brand-600 text-white px-5 py-3 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors flex justify-center items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-brand-600"
       >
         Tiếp tục <ArrowLeft className="w-4 h-4 rotate-180" />
       </button>
@@ -100,8 +133,11 @@ function Dashboard() {
 
   const handleJoinClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (meetingId.trim()) {
-      navigate(`/class/${meetingId.trim()}`);
+    // Zoom hiển thị Meeting ID có dấu cách (VD: "862 1715 1201") nhưng webhook gửi
+    // về không có dấu cách ("86217151201") -> phải xoá HẾT khoảng trắng, không chỉ 2 đầu.
+    const cleanId = meetingId.replace(/\s+/g, '');
+    if (cleanId) {
+      navigate(`/class/${cleanId}`);
     }
   };
 
@@ -121,7 +157,7 @@ function Dashboard() {
               <span className="text-slate-500 text-sm font-medium">Tham gia</span>
               <span className="text-xl font-bold mt-1 text-slate-900">Xem lớp học</span>
             </div>
-            <div className="p-2 bg-indigo-50 text-indigo-600 rounded-lg">
+            <div className="p-2 bg-brand-50 text-brand-600 rounded-lg">
               <BookOpen className="w-6 h-6" />
             </div>
           </div>
@@ -132,13 +168,13 @@ function Dashboard() {
               <input 
                 type="text" 
                 placeholder="Meeting ID..." 
-                className="w-full bg-slate-100 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 rounded-lg py-2 px-4 text-sm transition-all font-mono"
+                className="w-full bg-slate-100 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2 px-4 text-sm transition-all font-mono"
                 value={meetingId}
                 onChange={e => setMeetingId(e.target.value)}
                 required
               />
             </div>
-            <button type="submit" className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm">
+            <button type="submit" className="bg-brand-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm">
               Vào
             </button>
           </form>
@@ -338,7 +374,7 @@ function ClassView() {
           </button>
           <button
             onClick={() => setSaveModalOpen(true)}
-            className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+            className="bg-brand-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm flex items-center gap-2"
           >
             <Save className="w-4 h-4" />
             Lưu danh sách
@@ -406,7 +442,7 @@ function ClassView() {
                   <input 
                     type="text" 
                     placeholder="VD: Lớp Toán 10A"
-                    className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
+                    className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
                     value={newGroupName}
                     onChange={e => { setNewGroupName(e.target.value); setSaveToExistingGroup(''); }}
                   />
@@ -421,7 +457,7 @@ function ClassView() {
                <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Ghi đè nhóm đã có</label>
                   <select 
-                    className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
+                    className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
                     value={saveToExistingGroup}
                     onChange={e => { setSaveToExistingGroup(e.target.value); setNewGroupName(''); }}
                   >
@@ -443,7 +479,7 @@ function ClassView() {
                <button 
                  onClick={handleQuickSave}
                  disabled={!newGroupName && !saveToExistingGroup}
-                 className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm disabled:opacity-50 disabled:hover:bg-indigo-600"
+                 className="bg-brand-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm disabled:opacity-50 disabled:hover:bg-brand-600"
                >
                  Lưu danh sách
                </button>
@@ -458,7 +494,7 @@ function ClassView() {
           <div className="bg-white rounded-xl border border-slate-200 shadow-xl p-6 w-full max-w-lg">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5 text-indigo-600" /> Điểm danh nhanh
+                <CheckCircle2 className="w-5 h-5 text-brand-600" /> Điểm danh nhanh
               </h3>
               <button onClick={() => setAttendanceOpen(false)} className="text-slate-400 hover:text-slate-700 transition-colors">
                 <XCircle className="w-5 h-5" />
@@ -467,7 +503,7 @@ function ClassView() {
 
             <label className="block text-sm font-medium text-slate-600 mb-2">Chọn nhóm để đối chiếu</label>
             <select
-              className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
+              className="w-full bg-slate-50 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
               value={selectedGroupId}
               onChange={e => setSelectedGroupId(e.target.value)}
             >
@@ -500,7 +536,7 @@ function ClassView() {
             <div className="flex justify-end mt-6 pt-4 border-t border-slate-100">
               <button
                 onClick={() => setAttendanceOpen(false)}
-                className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+                className="bg-brand-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm"
               >
                 Đóng
               </button>
@@ -585,7 +621,7 @@ function ManageGroups() {
         </div>
         <button 
           onClick={() => setEditingGroup({ id: '', ten_nhom: 'Nhóm mới', hoc_sinh: [], updated_at: new Date() })} 
-          className="flex items-center gap-2 bg-indigo-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm"
+          className="flex items-center gap-2 bg-brand-600 text-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm"
         >
           <Plus className="w-4 h-4" /> Tạo nhóm
         </button>
@@ -601,13 +637,13 @@ function ManageGroups() {
                   <div className="flex flex-col">
                     <span className="text-slate-500 text-sm font-medium">Nhóm</span>
                     <span className="text-xl font-bold mt-1 text-slate-900">{g.ten_nhom}</span>
-                    <span className="text-sm font-medium text-indigo-600 mt-1">{g.hoc_sinh.length} học sinh</span>
+                    <span className="text-sm font-medium text-brand-600 mt-1">{g.hoc_sinh.length} học sinh</span>
                   </div>
                   <div className="flex gap-2">
                      <button onClick={() => exportExcel(g)} className="p-2 text-emerald-600 bg-emerald-50 rounded-lg hover:bg-emerald-100 transition-colors" title="Xuất Excel">
                         <Download className="w-4 h-4" />
                      </button>
-                     <button onClick={() => setEditingGroup(g)} className="px-3 py-2 text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors text-sm font-medium" title="Sửa nhóm">
+                     <button onClick={() => setEditingGroup(g)} className="px-3 py-2 text-brand-600 bg-brand-50 rounded-lg hover:bg-brand-100 transition-colors text-sm font-medium" title="Sửa nhóm">
                         Sửa
                      </button>
                      <button onClick={() => confirmDelete(g.id, g.ten_nhom)} className="p-2 text-rose-600 bg-rose-50 rounded-lg hover:bg-rose-100 transition-colors" title="Xoá nhóm">
@@ -651,9 +687,69 @@ function ManageGroups() {
   );
 }
 
+// Tải file Excel mẫu để giáo viên điền rồi nhập lại (cột khớp với lúc "Xuất Excel").
+const downloadSampleExcel = () => {
+  const ws = XLSX.utils.json_to_sheet([
+    { 'Tên': 'Nguyễn Văn A', 'Email': 'a@example.com', 'Zoom ID': '' },
+    { 'Tên': 'Trần Thị B', 'Email': '', 'Zoom ID': '' },
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Danh sách');
+  XLSX.writeFile(wb, 'mau_danh_sach_hoc_sinh.xlsx');
+};
+
+// Đọc file Excel người dùng chọn -> danh sách Student. Chấp nhận vài cách viết tên cột
+// khác nhau (có dấu/không dấu, hoa/thường) cho đỡ khó chịu khi giáo viên tự gõ tiêu đề.
+const parseStudentsFromExcel = async (file: File): Promise<Student[]> => {
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type: 'array' });
+  const sheet = wb.Sheets[wb.SheetNames[0]];
+  const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
+
+  const pick = (row: Record<string, unknown>, keys: string[]) => {
+    for (const key of Object.keys(row)) {
+      if (keys.includes(key.trim().toLowerCase())) {
+        const val = String(row[key] ?? '').trim();
+        if (val) return val;
+      }
+    }
+    return '';
+  };
+
+  return rows
+    .map(row => ({
+      ten: pick(row, ['tên', 'ten', 'họ tên', 'ho ten', 'name']),
+      email: pick(row, ['email']) || null,
+      zoom_id: pick(row, ['zoom id', 'zoomid', 'zoom_id', 'id zoom']) || null,
+    }))
+    .filter(s => s.ten);
+};
+
 function GroupEditor({ group, onClose, onSave }: { group: StudentGroup, onClose: () => void, onSave: (g: StudentGroup) => void }) {
   const [name, setName] = useState(group.ten_nhom);
   const [students, setStudents] = useState<Student[]>(group.hoc_sinh);
+  const [importMsg, setImportMsg] = useState<string | null>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+
+  const handleImportFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = ''; // cho phép chọn lại cùng 1 file lần sau
+    if (!file) return;
+
+    try {
+      const imported = await parseStudentsFromExcel(file);
+      if (imported.length === 0) {
+        setImportMsg('Không tìm thấy học sinh hợp lệ trong file (cần cột "Tên").');
+      } else {
+        setStudents(prev => [...prev, ...imported]);
+        setImportMsg(`Đã nhập thêm ${imported.length} học sinh từ file.`);
+      }
+    } catch (err) {
+      console.error('Lỗi đọc file Excel:', err);
+      setImportMsg('Không đọc được file. Hãy chắc chắn đây là file .xlsx hợp lệ.');
+    }
+    setTimeout(() => setImportMsg(null), 4000);
+  };
 
   const handleSave = async () => {
     const updated = {
@@ -694,7 +790,7 @@ function GroupEditor({ group, onClose, onSave }: { group: StudentGroup, onClose:
              <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors"><ArrowLeft className="w-5 h-5" /></button>
              <h2 className="text-xl font-bold text-slate-800">Chỉnh sửa nhóm</h2>
           </div>
-          <button onClick={handleSave} className="bg-indigo-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2">
+          <button onClick={handleSave} className="bg-brand-600 text-white px-5 py-2 rounded-lg font-medium text-sm hover:bg-brand-700 transition-colors shadow-sm flex items-center gap-2">
              <Save className="w-4 h-4" /> Lưu thay đổi
           </button>
        </div>
@@ -703,33 +799,48 @@ function GroupEditor({ group, onClose, onSave }: { group: StudentGroup, onClose:
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500 mb-2">Tên nhóm</label>
           <input 
             type="text" 
-            className="w-full md:w-1/2 bg-slate-50 border-transparent focus:bg-white focus:border-indigo-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
+            className="w-full md:w-1/2 bg-slate-50 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2.5 px-4 text-sm transition-all"
             value={name}
             onChange={e => setName(e.target.value)}
           />
        </div>
 
-       <div className="flex justify-between items-center mb-4">
-          <h3 className="font-semibold text-slate-800">Danh sách học sinh <span className="text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded text-sm ml-2">{students.length}</span></h3>
-          <button onClick={addStudent} className="text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm font-medium hover:bg-indigo-100 transition-colors">
-            <Plus className="w-4 h-4" /> Thêm tay
-          </button>
+       <div className="flex flex-wrap justify-between items-center gap-3 mb-4">
+          <h3 className="font-semibold text-slate-800">Danh sách học sinh <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded text-sm ml-2">{students.length}</span></h3>
+          <div className="flex flex-wrap gap-2">
+            <button onClick={downloadSampleExcel} className="text-slate-600 bg-slate-100 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm font-medium hover:bg-slate-200 transition-colors">
+              <Download className="w-4 h-4" /> Tải file mẫu
+            </button>
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={handleImportFile} />
+            <button onClick={() => fileInputRef.current?.click()} className="text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm font-medium hover:bg-emerald-100 transition-colors">
+              <Upload className="w-4 h-4" /> Nhập từ Excel
+            </button>
+            <button onClick={addStudent} className="text-brand-600 bg-brand-50 px-3 py-1.5 rounded-lg flex items-center gap-1 text-sm font-medium hover:bg-brand-100 transition-colors">
+              <Plus className="w-4 h-4" /> Thêm tay
+            </button>
+          </div>
        </div>
+
+       {importMsg && (
+          <div className="mb-4 text-sm bg-blue-50 border border-blue-200 text-blue-800 rounded-lg px-4 py-2">
+            {importMsg}
+          </div>
+       )}
 
        <div className="space-y-3">
           {students.map((s, i) => (
              <div key={i} className="flex flex-col md:flex-row gap-4 items-start md:items-center p-4 bg-slate-50 border border-slate-100 rounded-lg hover:border-slate-200 transition-colors">
                 <div className="flex-1 w-full">
                   <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Tên hiển thị</label>
-                  <input type="text" value={s.ten} onChange={e => updateStudent(i, 'ten', e.target.value)} className="w-full p-2.5 border-transparent focus:border-indigo-500 focus:ring-0 rounded bg-white text-sm shadow-sm" />
+                  <input type="text" value={s.ten} onChange={e => updateStudent(i, 'ten', e.target.value)} className="w-full p-2.5 border-transparent focus:border-brand-500 focus:ring-0 rounded bg-white text-sm shadow-sm" />
                 </div>
                 <div className="flex-1 w-full">
                   <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Email (tuỳ chọn)</label>
-                  <input type="text" value={s.email || ''} onChange={e => updateStudent(i, 'email', e.target.value)} placeholder="Không bắt buộc" className="w-full p-2.5 border-transparent focus:border-indigo-500 focus:ring-0 rounded bg-white text-sm shadow-sm" />
+                  <input type="text" value={s.email || ''} onChange={e => updateStudent(i, 'email', e.target.value)} placeholder="Không bắt buộc" className="w-full p-2.5 border-transparent focus:border-brand-500 focus:ring-0 rounded bg-white text-sm shadow-sm" />
                 </div>
                 <div className="flex-1 w-full">
                   <label className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Zoom ID (để đối chiếu)</label>
-                  <input type="text" value={s.zoom_id || ''} onChange={e => updateStudent(i, 'zoom_id', e.target.value)} placeholder="Trống sẽ so bằng tên" className="w-full p-2.5 border-transparent focus:border-indigo-500 focus:ring-0 rounded bg-white text-sm font-mono shadow-sm" />
+                  <input type="text" value={s.zoom_id || ''} onChange={e => updateStudent(i, 'zoom_id', e.target.value)} placeholder="Trống sẽ so bằng tên" className="w-full p-2.5 border-transparent focus:border-brand-500 focus:ring-0 rounded bg-white text-sm font-mono shadow-sm" />
                 </div>
                 <div className="flex-none pt-[1.6rem]">
                    <button onClick={() => removeStudent(i)} className="p-2 text-rose-500 hover:bg-rose-100 hover:text-rose-600 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>

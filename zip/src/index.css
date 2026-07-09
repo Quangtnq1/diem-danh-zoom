@@ -1,1 +1,15 @@
 @import "tailwindcss";
+
+/* Bảng màu thương hiệu AMURA — lấy mẫu trực tiếp từ logo (đỏ #E01C2E ở mức 600) */
+@theme {
+  --color-brand-50: #fdecee;
+  --color-brand-100: #fad0d4;
+  --color-brand-200: #f4a3ac;
+  --color-brand-300: #ec7683;
+  --color-brand-400: #e6505f;
+  --color-brand-500: #e0283c;
+  --color-brand-600: #e01c2e;
+  --color-brand-700: #b8172a;
+  --color-brand-800: #8f1220;
+  --color-brand-900: #660d16;
+}
