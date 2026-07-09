@@ -1,0 +1,171 @@
+{
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "a4483f31-374d-42b0-add2-20d2340d1d55",
+        "responseMode": "lastNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -480,
+        -48
+      ],
+      "id": "3a3713e1-c742-43e9-8eca-ef052ab50b40",
+      "name": "Webhook",
+      "webhookId": "a4483f31-374d-42b0-add2-20d2340d1d55"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Đặt 3 giá trị gốc tại đây, sau này đổi secret chỉ sửa 1 chỗ\nconst accountId    = 'tw-br83lSzOy9kJ6mAovzQ';\nconst clientId     = 'yQO64RS8QrOYbEXYBvGlvQ';\nconst clientSecret = 'GaufAe4B6yFz15JFaW72u1hpMOHyDJHG';\n\n// Tự tạo chuỗi base64 của client_id:client_secret\nconst basic = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');\n\nreturn [{\n  json: {\n    account_id: accountId,\n    basic_auth: `Basic ${basic}`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -256,
+        -48
+      ],
+      "id": "3190621b-bba2-4a7e-8c48-1220cb9ca044",
+      "name": "Tạo Credentials"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://zoom.us/oauth/token",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "authorization",
+              "value": "={{ $json.basic_auth }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "account_credentials"
+            },
+            {
+              "name": "account_id",
+              "value": "={{ $json.account_id }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        0,
+        -48
+      ],
+      "id": "a4e771b6-d273-4929-b5a5-09bf15b5180d",
+      "name": "Get Token"
+    },
+    {
+      "parameters": {
+        "url": "https://api.zoom.us/v2/metrics/meetings/85249355376/participants",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "type",
+              "value": "live"
+            },
+            {
+              "name": "page_size",
+              "value": "300"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.access_token }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.3,
+      "position": [
+        240,
+        -48
+      ],
+      "id": "6db7d08a-451a-4b95-872b-2a95778bfe14",
+      "name": "Get Participants"
+    },
+    {
+      "parameters": {
+        "jsCode": "const data = $json;\nconst list = data.participants || [];\nreturn [{\n  json: {\n    so_hoc_sinh: data.total_records ?? list.length,\n    danh_sach: list.map(p => ({\n      ten: p.user_name,\n      email: p.email || '',\n      vao_luc: p.join_time\n    }))\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -48
+      ],
+      "id": "9b305421-b410-4493-9155-f0b88533eaad",
+      "name": "Đếm học sinh"
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Tạo Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tạo Credentials": {
+      "main": [
+        [
+          {
+            "node": "Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Token": {
+      "main": [
+        [
+          {
+            "node": "Get Participants",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Participants": {
+      "main": [
+        [
+          {
+            "node": "Đếm học sinh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "meta": {
+    "instanceId": "936c342f90aed469dd4d07a23a3e2cc6e13385435bb93cd0f8c2fbc386e128f0"
+  }
+}

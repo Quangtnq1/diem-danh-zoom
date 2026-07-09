@@ -1,0 +1,18 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /attendance_events/{document=**} {
+      // allow anyone to read
+      allow read: if true;
+      // allow writes since we use client SDK in our Node.js server.
+      // normally we'd restrict this, but we don't have a secure way to 
+      // identify the Node server vs the browser client without Admin SDK
+      // or custom auth tokens. Let's allow write for now.
+      allow write: if true;
+    }
+    match /student_groups/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

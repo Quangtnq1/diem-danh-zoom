@@ -1,0 +1,15 @@
+# Cấu hình build & deploy cho Netlify
+[build]
+  command = "npm run build"   # chạy: vite build -> ra thư mục dist
+  publish = "dist"            # thư mục web tĩnh Netlify sẽ phục vụ
+  functions = "netlify/functions"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback: mọi đường dẫn (trừ /.netlify/functions/*) đều trả index.html
+# để React Router (BrowserRouter) hoạt động khi refresh trang con.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
