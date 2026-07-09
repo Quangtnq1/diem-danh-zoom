@@ -517,13 +517,16 @@ function ClassView() {
               <div className="mt-5">
                 {missingStudents.length > 0 ? (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                    <p className="text-red-800 font-semibold mb-2">Hiện tại đang thiếu các bạn:</p>
-                    <p className="text-red-900 text-lg font-bold leading-relaxed">
-                      {missingStudents.map(s => s.ten).join(', ')}
+                    <p className="text-red-800 font-semibold mb-3">
+                      Đang thiếu {missingStudents.length}/{selectedGroup.hoc_sinh.length} bạn, các bạn thiếu bao gồm:
                     </p>
-                    <p className="text-xs text-red-600 mt-3">
-                      Thiếu {missingStudents.length}/{selectedGroup.hoc_sinh.length} bạn — gọi các bạn vào lớp nhé.
-                    </p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                      {missingStudents.map((s, i) => (
+                        <div key={i} className="bg-white border border-dashed border-red-300 rounded-lg px-4 py-2 text-red-900 font-semibold text-sm">
+                          {s.ten}
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 ) : (
                   <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 text-emerald-800 font-medium flex items-center gap-2">
