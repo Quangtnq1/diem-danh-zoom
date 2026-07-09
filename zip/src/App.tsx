@@ -6,6 +6,7 @@ import { collection, query, where, onSnapshot, addDoc, updateDoc, doc, getDocs, 
 import * as XLSX from 'xlsx';
 import amuraLogo from './assets/amura-logo.jpg';
 import amuraMascot from './assets/amura-mascot.jpg';
+import meetingIdGuide from './assets/huong-dan-meeting-id.png';
 
 // Types
 type ZoomEvent = {
@@ -130,14 +131,19 @@ function SelectAccount() {
 function Dashboard() {
   const navigate = useNavigate();
   const [meetingId, setMeetingId] = useState('');
+  const [idError, setIdError] = useState(false);
 
   const handleJoinClass = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     // Zoom hiển thị Meeting ID có dấu cách (VD: "862 1715 1201") nhưng webhook gửi
     // về không có dấu cách ("86217151201") -> phải xoá HẾT khoảng trắng, không chỉ 2 đầu.
     const cleanId = meetingId.replace(/\s+/g, '');
-    if (cleanId) {
+    // Meeting ID của Zoom luôn gồm đúng 11 chữ số.
+    if (/^\d{11}$/.test(cleanId)) {
+      setIdError(false);
       navigate(`/class/${cleanId}`);
+    } else {
+      setIdError(true);
     }
   };
 
@@ -165,12 +171,12 @@ function Dashboard() {
           
           <form onSubmit={handleJoinClass} className="flex gap-4">
             <div className="relative flex-grow">
-              <input 
-                type="text" 
-                placeholder="Meeting ID..." 
-                className="w-full bg-slate-100 border-transparent focus:bg-white focus:border-brand-500 focus:ring-0 rounded-lg py-2 px-4 text-sm transition-all font-mono"
+              <input
+                type="text"
+                placeholder="Meeting ID..."
+                className={`w-full bg-slate-100 border focus:bg-white focus:ring-0 rounded-lg py-2 px-4 text-sm transition-all font-mono ${idError ? 'border-red-400 focus:border-red-500' : 'border-transparent focus:border-brand-500'}`}
                 value={meetingId}
-                onChange={e => setMeetingId(e.target.value)}
+                onChange={e => { setMeetingId(e.target.value); setIdError(false); }}
                 required
               />
             </div>
@@ -178,6 +184,16 @@ function Dashboard() {
               Vào
             </button>
           </form>
+
+          {idError && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-800 font-semibold text-sm mb-1">
+                Meeting ID không hợp lệ — phải gồm đúng 11 chữ số (VD: 867 5445 8511).
+              </p>
+              <p className="text-red-700 text-xs mb-3">Xem đúng Meeting ID trong khung thông tin cuộc họp trên Zoom:</p>
+              <img src={meetingIdGuide} alt="Vị trí Meeting ID trên Zoom" className="rounded-lg border border-red-200 max-w-full sm:max-w-xs" />
+            </div>
+          )}
         </div>
 
         <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col">
